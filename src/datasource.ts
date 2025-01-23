@@ -4,11 +4,12 @@ import {
   DataQueryResponse,
   DataSourceApi,
   DataSourceInstanceSettings,
+  ScopedVars,
   TestDataSourceResponse,
   createDataFrame,
   guessFieldTypeFromNameAndValue,
 } from '@grafana/data';
-import { getBackendSrv, isFetchError, FetchResponse } from '@grafana/runtime';
+import { getBackendSrv, getTemplateSrv, isFetchError, FetchResponse } from '@grafana/runtime';
 import { lastValueFrom } from 'rxjs';
 
 import { Query, Options } from './types';
@@ -42,14 +43,14 @@ export class DataSource extends DataSourceApi<Query, Options> {
   }
 
   /** Query for data, and optionally stream results. */
-  async query({ targets: queries }: DataQueryRequest<Query>): Promise<DataQueryResponse> {
-    return { data: await Promise.all(queries.map((query) => this.execute(query))) };
+  async query({ scopedVars, targets: queries }: DataQueryRequest<Query>): Promise<DataQueryResponse> {
+    return { data: await Promise.all(queries.map((query) => this.execute(query, scopedVars))) };
   }
 
   /** Run query against Grist HTTP API, convert result set into dataframe. */
-  async execute({ q, refId }: Query): Promise<DataFrame> {
+  async execute({ q, refId }: Query, scopedVars: ScopedVars): Promise<DataFrame> {
     // Pass query in JSON body to avoid leaking it in URL
-    const body = { sql: q };
+    const body = { sql: getTemplateSrv().replace(q, scopedVars) };
 
     // Execute query via HTTP API
     const { data } = await this.fetch<{ sql?: string }, { records: any[] }>('/sql', 'POST', body);

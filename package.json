@@ -8,6 +8,8 @@
     "node": ">=22"
   },
   "scripts": {
+    "dev": "webpack --config .config/webpack/webpack.config.ts --env development --watch",
+    "build": "webpack --config .config/webpack/webpack.config.ts --env production",
     "fmt": "prettier --write .",
     "check": "npm run check:fmt && npm run check:lint && npm run check:type",
     "check:fmt": "prettier --check .",

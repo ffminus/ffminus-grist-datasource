@@ -42,6 +42,11 @@ export class DataSource extends DataSourceApi<Query, Options> {
     }
   }
 
+  /** Filter out empty queries. */
+  filterQuery({ q }: Query): boolean {
+    return q !== undefined && q !== '';
+  }
+
   /** Query for data, and optionally stream results. */
   async query({ scopedVars, targets: queries }: DataQueryRequest<Query>): Promise<DataQueryResponse> {
     return { data: await Promise.all(queries.map((query) => this.execute(query, scopedVars))) };

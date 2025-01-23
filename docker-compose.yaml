@@ -1,0 +1,18 @@
+services:
+  grafana:
+    container_name: 'ffminus-grist-datasource'
+    build:
+      context: ./.config
+      args:
+        grafana_image: grafana-enterprise
+        grafana_version: 11.3.2
+        development: false
+    ports:
+      - 3000:3000/tcp
+    volumes:
+      - ./dist:/var/lib/grafana/plugins/ffminus-grist-datasource
+    environment:
+      NODE_ENV: development
+      GF_LOG_FILTERS: plugin.ffminus-grist-datasource:debug
+      GF_LOG_LEVEL: debug
+      GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: ffminus-grist-datasource

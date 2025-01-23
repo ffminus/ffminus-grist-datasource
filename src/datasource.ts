@@ -1,10 +1,12 @@
 import {
+  DataFrame,
   DataQueryRequest,
   DataQueryResponse,
   DataSourceApi,
   DataSourceInstanceSettings,
   TestDataSourceResponse,
   createDataFrame,
+  guessFieldTypeFromNameAndValue,
 } from '@grafana/data';
 import { getBackendSrv, isFetchError, FetchResponse } from '@grafana/runtime';
 import { lastValueFrom } from 'rxjs';
@@ -41,7 +43,19 @@ export class DataSource extends DataSourceApi<Query, Options> {
 
   /** Query for data, and optionally stream results. */
   async query({ targets: queries }: DataQueryRequest<Query>): Promise<DataQueryResponse> {
-    return { data: await Promise.all(queries.map(({ refId }) => createDataFrame({ refId, fields: [] }))) };
+    return { data: await Promise.all(queries.map((query) => this.execute(query))) };
+  }
+
+  /** Run query against Grist HTTP API, convert result set into dataframe. */
+  async execute({ q, refId }: Query): Promise<DataFrame> {
+    // Pass query in JSON body to avoid leaking it in URL
+    const body = { sql: q };
+
+    // Execute query via HTTP API
+    const { data } = await this.fetch<{ sql?: string }, { records: any[] }>('/sql', 'POST', body);
+
+    // Convert result set into a dataframe Grafana understands
+    return createDataFrame({ refId, fields: toDataFrameFields(data.records) });
   }
 
   /** Perform requests against data source via server-provided proxy. */
@@ -56,3 +70,13 @@ export class DataSource extends DataSourceApi<Query, Options> {
 
 /** Structure error message according to format expected by Grafana. */
 const fail = (message?: string): TestDataSourceResponse => ({ status: 'error', message: message ?? 'Unknown error' });
+
+/** Perform struct-of-array transformation, infer columns from first record. */
+const toDataFrameFields = (records: any[]) =>
+  records.length === 0
+    ? []
+    : Object.keys(records[0].fields).map((field) => ({
+        name: field,
+        values: records.map((record) => record.fields[field]),
+        type: guessFieldTypeFromNameAndValue(field, records[0].fields[field]),
+      }));

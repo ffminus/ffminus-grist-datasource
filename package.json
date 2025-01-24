@@ -14,7 +14,8 @@
     "check": "npm run check:fmt && npm run check:lint && npm run check:type",
     "check:fmt": "prettier --check .",
     "check:lint": "eslint --cache --ignore-path .gitignore --ext .js,.jsx,.ts,.tsx .",
-    "check:type": "tsc --noEmit"
+    "check:type": "tsc --noEmit",
+    "sign": "npx --yes @grafana/sign-plugin@3.0.8"
   },
   "dependencies": {
     "@emotion/css": "11.13.5",
